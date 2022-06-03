@@ -276,6 +276,8 @@ pub trait ObjectModel<VM: VMBinding> {
     /// Arguments:
     /// * `object`: The object to be dumped.
     fn dump_object(object: ObjectReference);
+
+    fn dump_object_custom(object: ObjectReference);
 }
 
 pub mod specs {

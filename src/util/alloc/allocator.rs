@@ -9,6 +9,10 @@ use crate::vm::VMBinding;
 use crate::vm::{ActivePlan, Collection};
 use downcast_rs::Downcast;
 
+use crate::util::linear_scan::{ObjectIterator, DefaultObjectSize};
+use crate::util::heap::layout::vm_layout_constants::{HEAP_START, HEAP_END};
+use crate::vm::ObjectModel;
+
 #[repr(C)]
 #[derive(Debug)]
 /// A list of errors that MMTk can encounter during allocation.
@@ -276,6 +280,24 @@ pub trait Allocator<VM: VMBinding>: Downcast {
                 let fail_with_oom = !plan.allocation_success.swap(true, Ordering::SeqCst);
                 trace!("fail with oom={}", fail_with_oom);
                 if fail_with_oom {
+                    println!("OOM ERRRRRRRRRRRRRROOOOOOOOOOOOOOOORRRRRRRRRRRRR!!!!!!!!!!!!!!!!!!!!");
+                    // let start = self.get_space().common().start;
+                    // let end = start + self.get_space().common().extent;
+                    // let mark_compact_end = unsafe {Address::from_usize(0x2005dc7f000)};
+                    let linear_scan =
+                        ObjectIterator::<VM, DefaultObjectSize<VM>, true>::new(
+                            HEAP_START, HEAP_END
+                        );
+                    // println!("{0}, {1}", start, end);
+
+                    for obj in linear_scan {
+                        if !crate::util::address::ObjectReference::is_null(obj) {
+                            // println!("{}", VM::VMObjectModel::object_start_ref(obj));
+                            // VM::VMObjectModel::dump_object(obj);
+                            // println!();
+                            VM::VMObjectModel::dump_object_custom(obj);
+                        }
+                    }
                     // Note that we throw a `HeapOutOfMemory` error here and return a null ptr back to the VM
                     trace!("Throw HeapOutOfMemory!");
                     VM::VMCollection::out_of_memory(tls, AllocationError::HeapOutOfMemory);
