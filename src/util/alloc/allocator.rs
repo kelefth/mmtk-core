@@ -172,6 +172,27 @@ pub trait Allocator<VM: VMBinding>: Downcast {
         self.alloc_slow_inline(size, align, offset)
     }
 
+    fn dump_heap(&self) {
+        println!("OOM ERRRRRRRRRRRRRROOOOOOOOOOOOOOOORRRRRRRRRRRRR!!!!!!!!!!!!!!!!!!!!");
+        // let start = self.get_space().common().start;
+        // let end = start + self.get_space().common().extent;
+        // let mark_compact_end = unsafe {Address::from_usize(0x2005dc7f000)};
+        let linear_scan =
+            ObjectIterator::<VM, DefaultObjectSize<VM>, true>::new(
+                HEAP_START, HEAP_END
+            );
+        // println!("{0}, {1}", start, end);
+
+        for obj in linear_scan {
+            if !crate::util::address::ObjectReference::is_null(obj) {
+                // println!("{}", VM::VMObjectModel::object_start_ref(obj));
+                // VM::VMObjectModel::dump_object(obj);
+                // println!();
+                VM::VMObjectModel::dump_object_custom(obj);
+            }
+        }
+    }
+
     /// Slowpath allocation attempt. This function executes the actual slowpath allocation.  A
     /// slowpath allocation in MMTk attempts to allocate the object using the per-allocator
     /// definition of [`alloc_slow_once`]. This function also accounts for increasing the
@@ -280,24 +301,9 @@ pub trait Allocator<VM: VMBinding>: Downcast {
                 let fail_with_oom = !plan.allocation_success.swap(true, Ordering::SeqCst);
                 trace!("fail with oom={}", fail_with_oom);
                 if fail_with_oom {
-                    println!("OOM ERRRRRRRRRRRRRROOOOOOOOOOOOOOOORRRRRRRRRRRRR!!!!!!!!!!!!!!!!!!!!");
-                    // let start = self.get_space().common().start;
-                    // let end = start + self.get_space().common().extent;
-                    // let mark_compact_end = unsafe {Address::from_usize(0x2005dc7f000)};
-                    let linear_scan =
-                        ObjectIterator::<VM, DefaultObjectSize<VM>, true>::new(
-                            HEAP_START, HEAP_END
-                        );
-                    // println!("{0}, {1}", start, end);
+                    
+                    self.dump_heap();
 
-                    for obj in linear_scan {
-                        if !crate::util::address::ObjectReference::is_null(obj) {
-                            // println!("{}", VM::VMObjectModel::object_start_ref(obj));
-                            // VM::VMObjectModel::dump_object(obj);
-                            // println!();
-                            VM::VMObjectModel::dump_object_custom(obj);
-                        }
-                    }
                     // Note that we throw a `HeapOutOfMemory` error here and return a null ptr back to the VM
                     trace!("Throw HeapOutOfMemory!");
                     VM::VMCollection::out_of_memory(tls, AllocationError::HeapOutOfMemory);
